@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
 import heapq
 import pandas as pd
+import time
 from mpl_toolkits.mplot3d.art3d import Line3DCollection
 
 class MountainPassage:
@@ -150,79 +151,171 @@ class MountainPassage:
         ax.legend()
         plt.show()
        
-    def plot_astar_optimization(self, start, goal):
+    # def plot_astar_optimization(self, start, goal):
+    #     fig = plt.figure()
+    #     ax = fig.add_subplot(111, projection='3d')
+
+    #     # Plot the surface
+    #     x = np.linspace(self.x_range[0], self.x_range[1], 100)
+    #     y = np.linspace(self.y_range[0], self.y_range[1], 100)
+    #     X, Y = np.meshgrid(x, y)
+    #     Z = self.elevation_funct(X, Y)
+    #     ax.plot_surface(X, Y, Z, color='whitesmoke', alpha=0.6)
+
+    #     # Plot all nodes and connections
+    #     ax.scatter(self.nodes[:, 0], self.nodes[:, 1], self.nodes[:, 2], c='blue', marker='o', s=50, label='Towns')
+    #     for a, b in self.connections:
+    #         ax.plot3D(*zip(*self.nodes[[a, b], :]), color='gray', linestyle='dotted', label='Connections')
+            
+    #     # Initialize A* variables
+    #     open_set = [(0, start, [])]  # priority queue
+    #     closed_set = set()  # visited nodes
+    #     min_cost = float('inf')  # initialize to minimum cost to be infinity
+    #     best_paths = []  # initialize best paths to be empty
+    #     visited_nodes = set()  # To store visited nodes for visualization
+
+    #     while open_set:
+    #         current_cost, current, path = heapq.heappop(open_set)  # pop node with lowest cost
+    #         if current in closed_set:
+    #             continue
+    #         path = path + [current]
+
+    #         # Visualization: Plot the current node being explored
+    #         if current != start and current != goal:
+    #             ax.scatter(self.nodes[current, 0], self.nodes[current, 1], self.nodes[current, 2], c='green',
+    #                     marker='o', s=50)
+    #             plt.pause(0.1)
+
+    #         if current == goal:
+    #             # update parameters
+    #             min_cost = current_cost
+    #             best_paths = path
+    #         elif current_cost == min_cost:
+    #             best_paths.append(path)
+    #             continue
+    #         closed_set.add(current)
+    #         visited_nodes.add(current)
+
+    #         # Visualization: Plot the path along the terrain surface
+    #         if len(path) >= 2:
+    #             for i in range(1, len(path)):
+    #                 a, b = path[i - 1], path[i]
+    #                 num_samples = 100
+    #                 x = np.linspace(self.nodes[a, 0], self.nodes[b, 0], num_samples)
+    #                 y = np.linspace(self.nodes[a, 1], self.nodes[b, 1], num_samples)
+    #                 z = self.elevation_funct(x, y)
+    #                 ax.plot3D(x, y, z, color='red')
+
+    #         # Visualization: Plot the connections being explored
+    #         for i in range(self.num_nodes):
+    #             if i not in closed_set:
+    #                 # calculates cost considering the line integral (terrain) and traffic weight matrix.
+    #                 cost = self.line_integral(self.nodes[current], self.nodes[i]) + self.traffic_weight_matrix[current, i]
+    #                 # push new cost, node, and path to priority queue
+    #                 heapq.heappush(open_set, (current_cost + cost, i, path))
+
+    #                 # Visualization: Plot the connection being explored
+    #                 if i not in visited_nodes:
+    #                     ax.plot3D(*zip(*self.nodes[[current, i], :]), color='green', linestyle='dotted', linewidth=2)
+    #                     plt.pause(0.2)
+
+    #     ax.set_xlabel('X')
+    #     ax.set_ylabel('Y')
+    #     ax.set_zlabel('Z')
+
+    #     # Colorbar for traffic weights
+    #     cmap = mcolors.LinearSegmentedColormap.from_list("Traffic", ["green", "yellow", "red"])
+    #     norm = plt.Normalize(vmin=np.min(self.traffic_weight_matrix), vmax=np.max(self.traffic_weight_matrix))
+    #     mappable = plt.cm.ScalarMappable(norm=norm, cmap=cmap)
+    #     mappable.set_array(self.traffic_weight_matrix)
+    #     cbar = plt.colorbar(mappable, ax=ax)
+    #     cbar.set_label('Traffic Weight')
+    #     custom_legend = [
+    #         plt.Line2D([0], [0], marker='o', color='blue', label='Towns', markersize=10, linestyle='None'),
+    #         plt.Line2D([0], [0], color='gray', label='Connections', linestyle='dotted', linewidth=2),
+    #         plt.Line2D([0], [0], color='red', label='Optimized Path', linewidth=2),
+    #         plt.Line2D([0], [0], color='green', label='Explored Nodes/Connections', linestyle='dotted', linewidth=2)
+    #     ]
+    #     ax.legend(handles=custom_legend)
+    #     plt.show()
+        
+    def plot_astar_optimization_new(self, start, goal, gridsize=100):
+        # Start the timer
+        start_time = time.time()
+        
         fig = plt.figure()
         ax = fig.add_subplot(111, projection='3d')
-
-        # Plot the surface
-        x = np.linspace(self.x_range[0], self.x_range[1], 100)
-        y = np.linspace(self.y_range[0], self.y_range[1], 100)
+        
+        # Generate the landscape for the plot
+        x = np.linspace(self.x_range[0], self.x_range[1], gridsize)
+        y = np.linspace(self.y_range[0], self.y_range[1], gridsize)
         X, Y = np.meshgrid(x, y)
         Z = self.elevation_funct(X, Y)
         ax.plot_surface(X, Y, Z, color='whitesmoke', alpha=0.6)
-
-        # Plot all nodes and connections
+        
+        # Plot nodes and initial connections
         ax.scatter(self.nodes[:, 0], self.nodes[:, 1], self.nodes[:, 2], c='blue', marker='o', s=50, label='Towns')
         for a, b in self.connections:
-            ax.plot3D(*zip(*self.nodes[[a, b], :]), color='gray', linestyle='dotted', label='Connections')
-            
+            line_x, line_y = np.linspace(self.nodes[a, 0], self.nodes[b, 0], 100), np.linspace(self.nodes[a, 1], self.nodes[b, 1], 100)
+            line_z = self.elevation_funct(line_x, line_y)
+            ax.plot3D(line_x, line_y, line_z, color='gray', linestyle='dotted', label='Connections')
+        
         # Initialize A* variables
-        open_set = [(0, start, [])]  # priority queue
-        closed_set = set()  # visited nodes
-        min_cost = float('inf')  # initialize to minimum cost to be infinity
-        best_paths = []  # initialize best paths to be empty
-        visited_nodes = set()  # To store visited nodes for visualization
-
+        open_set = [(0, start, [])]
+        closed_set = set()
+        min_cost = float('inf')
+        best_paths = []
+        visited_nodes = set()
+        
+        df_records = []
+        
         while open_set:
-            current_cost, current, path = heapq.heappop(open_set)  # pop node with lowest cost
+            current_cost, current, path = heapq.heappop(open_set)
             if current in closed_set:
                 continue
             path = path + [current]
-
-            # Visualization: Plot the current node being explored
-            if current != start and current != goal:
-                ax.scatter(self.nodes[current, 0], self.nodes[current, 1], self.nodes[current, 2], c='green',
-                        marker='o', s=50)
-                plt.pause(0.1)
-
-            if current == goal:
-                # update parameters
-                min_cost = current_cost
-                best_paths = path
-            elif current_cost == min_cost:
-                best_paths.append(path)
-                continue
-            closed_set.add(current)
             visited_nodes.add(current)
 
-            # Visualization: Plot the path along the terrain surface
-            if len(path) >= 2:
+            # Visualization: Plot the current path being explored
+            if len(path) > 1:
                 for i in range(1, len(path)):
-                    a, b = path[i - 1], path[i]
-                    num_samples = 100
-                    x = np.linspace(self.nodes[a, 0], self.nodes[b, 0], num_samples)
-                    y = np.linspace(self.nodes[a, 1], self.nodes[b, 1], num_samples)
-                    z = self.elevation_funct(x, y)
-                    ax.plot3D(x, y, z, color='red')
+                    prev, curr = path[i - 1], path[i]
+                    line_x, line_y = np.linspace(self.nodes[prev, 0], self.nodes[curr, 0], 100), np.linspace(self.nodes[prev, 1], self.nodes[curr, 1], 100)
+                    line_z = self.elevation_funct(line_x, line_y)
+                    ax.plot3D(line_x, line_y, line_z, color='red', linewidth=2)
+                    plt.draw()
+                    plt.pause(0.01)
 
-            # Visualization: Plot the connections being explored
+            if current == goal:
+                # Stop the timer
+                end_time = time.time()
+                min_cost = current_cost
+                best_paths = path
+                total_cost = sum(self.traffic_weight_matrix[path[i], path[i + 1]] for i in range(len(path) - 1))
+                df_records.append({
+                    'Convergence Time': end_time - start_time,
+                    'Raw Cost': total_cost - self.traffic_weight_matrix[path[-2], path[-1]],
+                    'Total Cost': total_cost,
+                    'Traffic Cost': self.traffic_weight_matrix[path[-2], path[-1]],
+                    
+                    'Grid Size': gridsize
+                })
+                continue
+            elif current_cost < min_cost:
+                best_paths = [path]
+                min_cost = current_cost
+
+            closed_set.add(current)
+
             for i in range(self.num_nodes):
-                if i not in closed_set:
-                    # calculates cost considering the line integral (terrain) and traffic weight matrix.
+                if i not in closed_set and i not in path:
                     cost = self.line_integral(self.nodes[current], self.nodes[i]) + self.traffic_weight_matrix[current, i]
-                    # push new cost, node, and path to priority queue
                     heapq.heappush(open_set, (current_cost + cost, i, path))
-
-                    # Visualization: Plot the connection being explored
-                    if i not in visited_nodes:
-                        ax.plot3D(*zip(*self.nodes[[current, i], :]), color='green', linestyle='dotted', linewidth=2)
-                        plt.pause(0.2)
 
         ax.set_xlabel('X')
         ax.set_ylabel('Y')
         ax.set_zlabel('Z')
 
-        # Colorbar for traffic weights
         cmap = mcolors.LinearSegmentedColormap.from_list("Traffic", ["green", "yellow", "red"])
         norm = plt.Normalize(vmin=np.min(self.traffic_weight_matrix), vmax=np.max(self.traffic_weight_matrix))
         mappable = plt.cm.ScalarMappable(norm=norm, cmap=cmap)
@@ -230,15 +323,19 @@ class MountainPassage:
         cbar = plt.colorbar(mappable, ax=ax)
         cbar.set_label('Traffic Weight')
         custom_legend = [
-            plt.Line2D([0], [0], marker='o', color='blue', label='Towns', markersize=10, linestyle='None'),
+            plt.Line2D([0], [0], marker='o', color='w', label='Towns', markersize=10, linestyle='None'),
             plt.Line2D([0], [0], color='gray', label='Connections', linestyle='dotted', linewidth=2),
             plt.Line2D([0], [0], color='red', label='Optimized Path', linewidth=2),
             plt.Line2D([0], [0], color='green', label='Explored Nodes/Connections', linestyle='dotted', linewidth=2)
         ]
         ax.legend(handles=custom_legend)
         plt.show()
-
         
+        # Create the DataFrame after the while loop
+        results_df = pd.DataFrame(df_records)
+        
+        return results_df
+
 def elevation_func_1(x, y):
     return np.sin(x) * np.cos(y) + 3
 
@@ -347,10 +444,13 @@ num_connections = 15
 
 # """Elevation Function 4"""
 
+num_nodes = 30
+num_connections = 20
+
 x_range = (-np.pi, np.pi)
 y_range = (-np.pi, np.pi)
 
-mountain_passage_5 = MountainPassage(elevation_funct=elevation_func_4, traffic_func=traffic_func, num_nodes=num_nodes, num_connections=num_connections, x_range=x_range, y_range=y_range)
+mountain_passage_5 = MountainPassage(elevation_funct=elevation_func_5, traffic_func=traffic_func, num_nodes=num_nodes, num_connections=num_connections, x_range=x_range, y_range=y_range)
 print("Elevation Function with Sine and Cosine Interaction:")
 mountain_passage_5.plot(show_meshgrid=True)
 mountain_passage_5.plot(show_meshgrid=False)
@@ -364,5 +464,7 @@ start, goal = mountain_passage_5.find_furthest_nodes()
 print("Furthest Nodes: ", start, goal)
 path = mountain_passage_5.astar(start, goal)
 print("Path:", path)
-mountain_passage_5.plot_astar_optimization(start, goal)
+# mountain_passage_5.plot_astar_optimization(start, goal)
 mountain_passage_5.plot_path_astar(path)
+df = mountain_passage_5.plot_astar_optimization_new(start, goal, gridsize=100)
+print(df)

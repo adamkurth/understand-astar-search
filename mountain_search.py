@@ -52,7 +52,7 @@ class MountainPassage:
         cost = dist + max(0, delta_elevation) + turns + 2*crash_potential
         return cost
     
-    def plot(self, show_meshgrid=True):
+    def plot(self, show_plot=True):
         x = np.linspace(self.x_range[0], self.x_range[1], 100)
         y = np.linspace(self.y_range[0], self.y_range[1], 100)
         X, Y = np.meshgrid(x, y)
@@ -61,7 +61,7 @@ class MountainPassage:
         fig = plt.figure()
         ax = fig.add_subplot(111, projection='3d')
         
-        if show_meshgrid:
+        if show_plot:
             ax.plot_surface(X, Y, Z, color='whitesmoke', alpha=0.6)  # Set surface to a single color
 
         ax.scatter(self.nodes[:, 0], self.nodes[:, 1], self.nodes[:, 2], c='blue', marker='o', s=50, label='Towns')
@@ -150,115 +150,46 @@ class MountainPassage:
         ax.set_zlabel('Z')
         ax.legend()
         plt.show()
-       
-    # def plot_astar_optimization(self, start, goal):
-    #     fig = plt.figure()
-    #     ax = fig.add_subplot(111, projection='3d')
 
-    #     # Plot the surface
-    #     x = np.linspace(self.x_range[0], self.x_range[1], 100)
-    #     y = np.linspace(self.y_range[0], self.y_range[1], 100)
-    #     X, Y = np.meshgrid(x, y)
-    #     Z = self.elevation_funct(X, Y)
-    #     ax.plot_surface(X, Y, Z, color='whitesmoke', alpha=0.6)
+        
+    def plot_astar_optimization_new(self, start, goal, gridsize=100, show_plot=True):
 
-    #     # Plot all nodes and connections
-    #     ax.scatter(self.nodes[:, 0], self.nodes[:, 1], self.nodes[:, 2], c='blue', marker='o', s=50, label='Towns')
-    #     for a, b in self.connections:
-    #         ax.plot3D(*zip(*self.nodes[[a, b], :]), color='gray', linestyle='dotted', label='Connections')
+        if show_plot:
+            fig = plt.figure()
+            ax = fig.add_subplot(111, projection='3d')
             
-    #     # Initialize A* variables
-    #     open_set = [(0, start, [])]  # priority queue
-    #     closed_set = set()  # visited nodes
-    #     min_cost = float('inf')  # initialize to minimum cost to be infinity
-    #     best_paths = []  # initialize best paths to be empty
-    #     visited_nodes = set()  # To store visited nodes for visualization
+            # Generate the landscape for the plot
+            x = np.linspace(self.x_range[0], self.x_range[1], gridsize)
+            y = np.linspace(self.y_range[0], self.y_range[1], gridsize)
+            X, Y = np.meshgrid(x, y)
+            Z = self.elevation_funct(X, Y)
+            ax.plot_surface(X, Y, Z, color='whitesmoke', alpha=0.6)
+            
+            # Plot nodes and initial connections
+            ax.scatter(self.nodes[:, 0], self.nodes[:, 1], self.nodes[:, 2], c='blue', marker='o', s=50, label='Towns')
+            for a, b in self.connections:
+                line_x, line_y = np.linspace(self.nodes[a, 0], self.nodes[b, 0], 100), np.linspace(self.nodes[a, 1], self.nodes[b, 1], 100)
+                line_z = self.elevation_funct(line_x, line_y)
+                ax.plot3D(line_x, line_y, line_z, color='gray', linestyle='dotted', label='Connections')
+            
+            ax.set_xlabel('X')
+            ax.set_ylabel('Y')
+            ax.set_zlabel('Z')
 
-    #     while open_set:
-    #         current_cost, current, path = heapq.heappop(open_set)  # pop node with lowest cost
-    #         if current in closed_set:
-    #             continue
-    #         path = path + [current]
-
-    #         # Visualization: Plot the current node being explored
-    #         if current != start and current != goal:
-    #             ax.scatter(self.nodes[current, 0], self.nodes[current, 1], self.nodes[current, 2], c='green',
-    #                     marker='o', s=50)
-    #             plt.pause(0.1)
-
-    #         if current == goal:
-    #             # update parameters
-    #             min_cost = current_cost
-    #             best_paths = path
-    #         elif current_cost == min_cost:
-    #             best_paths.append(path)
-    #             continue
-    #         closed_set.add(current)
-    #         visited_nodes.add(current)
-
-    #         # Visualization: Plot the path along the terrain surface
-    #         if len(path) >= 2:
-    #             for i in range(1, len(path)):
-    #                 a, b = path[i - 1], path[i]
-    #                 num_samples = 100
-    #                 x = np.linspace(self.nodes[a, 0], self.nodes[b, 0], num_samples)
-    #                 y = np.linspace(self.nodes[a, 1], self.nodes[b, 1], num_samples)
-    #                 z = self.elevation_funct(x, y)
-    #                 ax.plot3D(x, y, z, color='red')
-
-    #         # Visualization: Plot the connections being explored
-    #         for i in range(self.num_nodes):
-    #             if i not in closed_set:
-    #                 # calculates cost considering the line integral (terrain) and traffic weight matrix.
-    #                 cost = self.line_integral(self.nodes[current], self.nodes[i]) + self.traffic_weight_matrix[current, i]
-    #                 # push new cost, node, and path to priority queue
-    #                 heapq.heappush(open_set, (current_cost + cost, i, path))
-
-    #                 # Visualization: Plot the connection being explored
-    #                 if i not in visited_nodes:
-    #                     ax.plot3D(*zip(*self.nodes[[current, i], :]), color='green', linestyle='dotted', linewidth=2)
-    #                     plt.pause(0.2)
-
-    #     ax.set_xlabel('X')
-    #     ax.set_ylabel('Y')
-    #     ax.set_zlabel('Z')
-
-    #     # Colorbar for traffic weights
-    #     cmap = mcolors.LinearSegmentedColormap.from_list("Traffic", ["green", "yellow", "red"])
-    #     norm = plt.Normalize(vmin=np.min(self.traffic_weight_matrix), vmax=np.max(self.traffic_weight_matrix))
-    #     mappable = plt.cm.ScalarMappable(norm=norm, cmap=cmap)
-    #     mappable.set_array(self.traffic_weight_matrix)
-    #     cbar = plt.colorbar(mappable, ax=ax)
-    #     cbar.set_label('Traffic Weight')
-    #     custom_legend = [
-    #         plt.Line2D([0], [0], marker='o', color='blue', label='Towns', markersize=10, linestyle='None'),
-    #         plt.Line2D([0], [0], color='gray', label='Connections', linestyle='dotted', linewidth=2),
-    #         plt.Line2D([0], [0], color='red', label='Optimized Path', linewidth=2),
-    #         plt.Line2D([0], [0], color='green', label='Explored Nodes/Connections', linestyle='dotted', linewidth=2)
-    #     ]
-    #     ax.legend(handles=custom_legend)
-    #     plt.show()
-        
-    def plot_astar_optimization_new(self, start, goal, gridsize=100):
-        # Start the timer
-        start_time = time.time()
-        
-        fig = plt.figure()
-        ax = fig.add_subplot(111, projection='3d')
-        
-        # Generate the landscape for the plot
-        x = np.linspace(self.x_range[0], self.x_range[1], gridsize)
-        y = np.linspace(self.y_range[0], self.y_range[1], gridsize)
-        X, Y = np.meshgrid(x, y)
-        Z = self.elevation_funct(X, Y)
-        ax.plot_surface(X, Y, Z, color='whitesmoke', alpha=0.6)
-        
-        # Plot nodes and initial connections
-        ax.scatter(self.nodes[:, 0], self.nodes[:, 1], self.nodes[:, 2], c='blue', marker='o', s=50, label='Towns')
-        for a, b in self.connections:
-            line_x, line_y = np.linspace(self.nodes[a, 0], self.nodes[b, 0], 100), np.linspace(self.nodes[a, 1], self.nodes[b, 1], 100)
-            line_z = self.elevation_funct(line_x, line_y)
-            ax.plot3D(line_x, line_y, line_z, color='gray', linestyle='dotted', label='Connections')
+            cmap = mcolors.LinearSegmentedColormap.from_list("Traffic", ["green", "yellow", "red"])
+            norm = plt.Normalize(vmin=np.min(self.traffic_weight_matrix), vmax=np.max(self.traffic_weight_matrix))
+            mappable = plt.cm.ScalarMappable(norm=norm, cmap=cmap)
+            mappable.set_array(self.traffic_weight_matrix)
+            cbar = plt.colorbar(mappable, ax=ax)
+            cbar.set_label('Traffic Weight')
+            custom_legend = [
+                plt.Line2D([0], [0], marker='o', color='w', label='Towns', markersize=10, linestyle='None'),
+                plt.Line2D([0], [0], color='gray', label='Connections', linestyle='dotted', linewidth=2),
+                plt.Line2D([0], [0], color='red', label='Optimized Path', linewidth=2),
+                plt.Line2D([0], [0], color='green', label='Explored Nodes/Connections', linestyle='dotted', linewidth=2)
+            ]
+            ax.legend(handles=custom_legend)
+            plt.show()
         
         # Initialize A* variables
         open_set = [(0, start, [])]
@@ -269,6 +200,9 @@ class MountainPassage:
         
         df_records = []
         
+        # Start the timer
+        start_time = time.time()
+
         while open_set:
             current_cost, current, path = heapq.heappop(open_set)
             if current in closed_set:
@@ -297,7 +231,9 @@ class MountainPassage:
                     'Raw Cost': total_cost - self.traffic_weight_matrix[path[-2], path[-1]],
                     'Total Cost': total_cost,
                     'Traffic Cost': self.traffic_weight_matrix[path[-2], path[-1]],
-                    
+                    'Path': path,
+                    'Number of Nodes': self.num_nodes,
+                    'Number of Connections': self.num_connections,
                     'Grid Size': gridsize
                 })
                 continue
@@ -312,24 +248,24 @@ class MountainPassage:
                     cost = self.line_integral(self.nodes[current], self.nodes[i]) + self.traffic_weight_matrix[current, i]
                     heapq.heappush(open_set, (current_cost + cost, i, path))
 
-        ax.set_xlabel('X')
-        ax.set_ylabel('Y')
-        ax.set_zlabel('Z')
+        # ax.set_xlabel('X')
+        # ax.set_ylabel('Y')
+        # ax.set_zlabel('Z')
 
-        cmap = mcolors.LinearSegmentedColormap.from_list("Traffic", ["green", "yellow", "red"])
-        norm = plt.Normalize(vmin=np.min(self.traffic_weight_matrix), vmax=np.max(self.traffic_weight_matrix))
-        mappable = plt.cm.ScalarMappable(norm=norm, cmap=cmap)
-        mappable.set_array(self.traffic_weight_matrix)
-        cbar = plt.colorbar(mappable, ax=ax)
-        cbar.set_label('Traffic Weight')
-        custom_legend = [
-            plt.Line2D([0], [0], marker='o', color='w', label='Towns', markersize=10, linestyle='None'),
-            plt.Line2D([0], [0], color='gray', label='Connections', linestyle='dotted', linewidth=2),
-            plt.Line2D([0], [0], color='red', label='Optimized Path', linewidth=2),
-            plt.Line2D([0], [0], color='green', label='Explored Nodes/Connections', linestyle='dotted', linewidth=2)
-        ]
-        ax.legend(handles=custom_legend)
-        plt.show()
+        # cmap = mcolors.LinearSegmentedColormap.from_list("Traffic", ["green", "yellow", "red"])
+        # norm = plt.Normalize(vmin=np.min(self.traffic_weight_matrix), vmax=np.max(self.traffic_weight_matrix))
+        # mappable = plt.cm.ScalarMappable(norm=norm, cmap=cmap)
+        # mappable.set_array(self.traffic_weight_matrix)
+        # cbar = plt.colorbar(mappable, ax=ax)
+        # cbar.set_label('Traffic Weight')
+        # custom_legend = [
+        #     plt.Line2D([0], [0], marker='o', color='w', label='Towns', markersize=10, linestyle='None'),
+        #     plt.Line2D([0], [0], color='gray', label='Connections', linestyle='dotted', linewidth=2),
+        #     plt.Line2D([0], [0], color='red', label='Optimized Path', linewidth=2),
+        #     plt.Line2D([0], [0], color='green', label='Explored Nodes/Connections', linestyle='dotted', linewidth=2)
+        # ]
+        # ax.legend(handles=custom_legend)
+        # plt.show()
         
         # Create the DataFrame after the while loop
         results_df = pd.DataFrame(df_records)
@@ -355,116 +291,215 @@ def traffic_func():
     return np.random.rand(num_nodes, num_nodes) * 10
 
 
-"""Show network with traffic weights computed using line integral"""
-num_nodes = 15
-num_connections = 15
+def analyze_elevation_function(elevation_func, domain, num_nodes_list, num_connections_list_1, num_connections_list_half, num_connections_list_twice):
+    x_range, y_range = domain
+    convergence_data = []
+
+    for num_nodes in num_nodes_list:
+        for num_connections in num_connections_list_1:
+            mountain_passage = MountainPassage(elevation_funct=elevation_func, traffic_func=traffic_func, num_nodes=num_nodes, num_connections=num_connections, x_range=x_range, y_range=y_range)
+
+            print(f"Function {elevation_func.__name__}:")
+            
+            # Uncomment these lines to plot and show the meshgrid
+            # mountain_passage.plot(show_meshgrid=True)
+            # mountain_passage.plot(show_meshgrid=False)
+
+            start_time = time.time()
+
+            # Uncomment these lines to calculate and show A* path
+            # start, goal = mountain_passage.find_furthest_nodes()
+            # print("Furthest Nodes: ", start, goal)
+            # path = mountain_passage.astar(start, goal)
+            # print("Path:", path)
+            # mountain_passage.plot_astar_optimization(start, goal)
+            # mountain_passage.plot_path_astar(path)
+
+            convergence_data.append({
+                'Function': elevation_func.__name__,
+                'Num Nodes': num_nodes,
+                'Num Connections': num_connections,
+                'Total Time to Convergence': time.time() - start_time
+            })
+
+    return pd.DataFrame(convergence_data)
+
+def main():
+    num_nodes_list = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100]
+    num_connections_list_1 = [10, 20, 30, 40, 50]
+    num_connections_list_half = [x // 2 for x in num_connections_list_1]
+    num_connections_list_twice = [2 * x for x in num_connections_list_1]
+
+    elevation_functions = [elevation_func_1, elevation_func_2, elevation_func_3, elevation_func_4, elevation_func_5]
+    domains = [((-np.pi, np.pi), (-np.pi, np.pi)),
+               ((-2, 2), (-2, 2)),
+               ((0, np.pi), (0, np.pi))]
+
+    savemycomputer_functon = elevation_functions[:2]
+    savemycomputer_domain = domains[:2]
+    
+    for function, domain in zip(savemycomputer_functon, savemycomputer_domain):
+        convergence_data = analyze_elevation_function(function, domain, num_nodes_list, num_connections_list_1, num_connections_list_half, num_connections_list_twice)
+        
+    # for elevation_func, domain in zip(elevation_functions, domains):
+    #     convergence_data = analyze_elevation_function(elevation_func, domain, num_nodes_list, num_connections_list_1, num_connections_list_half, num_connections_list_twice)
+    #     print(convergence_data)
+
+if __name__ == "__main__":
+    main()
+
+# num_nodes = 30
+# num_connections = 20
 
 # x_range = (-np.pi, np.pi)
 # y_range = (-np.pi, np.pi)
 
-# """Steep Elevation Function"""""
-# mountain_passage_1 = MountainPassage(elevation_funct=elevation_func_1, traffic_func=traffic_func, num_nodes=num_nodes, num_connections=num_connections, x_range=x_range, y_range=y_range)
-# print("Steep Elevation Function:")
-# mountain_passage_1.plot(show_meshgrid=True)
-# mountain_passage_1.plot(show_meshgrid=False)
-# # print(mountain_passage.traffic_weight_matrix)
+# mountain_passage_5 = MountainPassage(elevation_funct=elevation_func_5, traffic_func=traffic_func, num_nodes=num_nodes, num_connections=num_connections, x_range=x_range, y_range=y_range)
+# print("Elevation Function with Sine and Cosine Interaction:")
+# mountain_passage_5.plot(show_plot=True)
+# mountain_passage_5.plot(show_plot=False)
 
-# traffic_df = pd.DataFrame(mountain_passage_1.traffic_weight_matrix)
+# traffic_df = pd.DataFrame(mountain_passage_5.traffic_weight_matrix)
 # print(traffic_df)
 
 # """A* Algorithm"""""
-# start, goal = mountain_passage_1.find_furthest_nodes()
-# print("Furthest Nodes: ", start, goal)
-# path = mountain_passage_1.astar(start, goal)
-# print("Path:", path)
-# mountain_passage_1.plot_astar_optimization(start, goal)
-# mountain_passage_1.plot_path_astar(path)
 
-# """Gentle Elevation Function"""""
+# start, goal = mountain_passage_5.find_furthest_nodes()
+# print("Furthest Nodes: ", start, goal)
+# path = mountain_passage_5.astar(start, goal)
+# print("Path:", path)
+# # mountain_passage_5.plot_astar_optimization(start, goal)
+# mountain_passage_5.plot_path_astar(path)
+# df = mountain_passage_5.plot_astar_optimization_new(start, goal, gridsize=100)
+# print(df)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# """Show network with traffic weights computed using line integral"""
+# num_nodes = 15
+# num_connections = 15
+
+# # x_range = (-np.pi, np.pi)
+# # y_range = (-np.pi, np.pi)
+
+# # """Steep Elevation Function"""""
+# # mountain_passage_1 = MountainPassage(elevation_funct=elevation_func_1, traffic_func=traffic_func, num_nodes=num_nodes, num_connections=num_connections, x_range=x_range, y_range=y_range)
+# # print("Steep Elevation Function:")
+# # mountain_passage_1.plot(show_plot=True)
+# # mountain_passage_1.plot(show_plot=False)
+# # # print(mountain_passage.traffic_weight_matrix)
+
+# # traffic_df = pd.DataFrame(mountain_passage_1.traffic_weight_matrix)
+# # print(traffic_df)
+
+# # """A* Algorithm"""""
+# # start, goal = mountain_passage_1.find_furthest_nodes()
+# # print("Furthest Nodes: ", start, goal)
+# # path = mountain_passage_1.astar(start, goal)
+# # print("Path:", path)
+# # mountain_passage_1.plot_astar_optimization(start, goal)
+# # mountain_passage_1.plot_path_astar(path)
+
+# # """Gentle Elevation Function"""""
+# # x_range = (-np.pi, np.pi)
+# # y_range = (-np.pi, np.pi)
+
+# # mountain_passage_2 = MountainPassage(elevation_funct=elevation_func_2, traffic_func=traffic_func, num_nodes=num_connections, num_connections=num_connections, x_range=x_range, y_range=y_range)
+# # print("Gentle Elevation Function:")
+# # mountain_passage_2.plot(show_plot=True)
+# # mountain_passage_2.plot(show_plot=False)
+
+# # traffic_df = pd.DataFrame(mountain_passage_2.traffic_weight_matrix)
+# # print(traffic_df)
+
+# # """A* Algorithm""" 
+# # start, goal = mountain_passage_2.find_furthest_nodes()
+# # print("Furthest Nodes: ", start, goal)
+# # path = mountain_passage_2.astar(start, goal)
+# # print("Path:", path)
+# # mountain_passage_2.plot_astar_optimization(start, goal)
+# # mountain_passage_2.plot_path_astar(path)
+
+# # """Elevation Function 3"""
+# # x_range = (-2, 2)
+# # y_range = (-2, 2)
+
+# # mountain_passage_3 = MountainPassage(elevation_funct=elevation_func_3, traffic_func=traffic_func, num_nodes=num_nodes, num_connections=num_connections, x_range=x_range, y_range=y_range)
+# # print("Elevation Function with Sine and Cosine Interaction:")
+# # mountain_passage_3.plot(show_plot=True)
+# # mountain_passage_3.plot(show_plot=False)
+
+# # traffic_df = pd.DataFrame(mountain_passage_3.traffic_weight_matrix)
+# # print(traffic_df)
+
+# # """A* Algorithm"""""
+
+# # start, goal = mountain_passage_3.find_furthest_nodes()
+# # print("Furthest Nodes: ", start, goal)
+# # path = mountain_passage_3.astar(start, goal)
+# # print("Path:", path)
+# # mountain_passage_3.plot_astar_optimization(start, goal)
+# # mountain_passage_3.plot_path_astar(path)
+
+# # """Elevation Function 4"""
+# # x_range = (0, np.pi)
+# # y_range = (0, np.pi)
+
+# # mountain_passage_4 = MountainPassage(elevation_funct=elevation_func_4, traffic_func=traffic_func, num_nodes=num_nodes, num_connections=num_connections, x_range=x_range, y_range=y_range)
+# # print("Elevation Function with Sine and Cosine Interaction:")
+# # mountain_passage_4.plot(show_plot=True)
+# # mountain_passage_4.plot(show_plot=False)
+
+# # traffic_df = pd.DataFrame(mountain_passage_4.traffic_weight_matrix)
+# # print(traffic_df)
+
+# # """A* Algorithm"""""
+
+# # start, goal = mountain_passage_4.find_furthest_nodes()
+# # print("Furthest Nodes: ", start, goal)
+# # path = mountain_passage_4.astar(start, goal)
+# # print("Path:", path)
+# # mountain_passage_4.plot_astar_optimization(start, goal)
+# # mountain_passage_4.plot_path_astar(path)
+
+# # """Elevation Function 4"""
+
+# num_nodes = 30
+# num_connections = 20
+
 # x_range = (-np.pi, np.pi)
 # y_range = (-np.pi, np.pi)
 
-# mountain_passage_2 = MountainPassage(elevation_funct=elevation_func_2, traffic_func=traffic_func, num_nodes=num_connections, num_connections=num_connections, x_range=x_range, y_range=y_range)
-# print("Gentle Elevation Function:")
-# mountain_passage_2.plot(show_meshgrid=True)
-# mountain_passage_2.plot(show_meshgrid=False)
-
-# traffic_df = pd.DataFrame(mountain_passage_2.traffic_weight_matrix)
-# print(traffic_df)
-
-# """A* Algorithm""" 
-# start, goal = mountain_passage_2.find_furthest_nodes()
-# print("Furthest Nodes: ", start, goal)
-# path = mountain_passage_2.astar(start, goal)
-# print("Path:", path)
-# mountain_passage_2.plot_astar_optimization(start, goal)
-# mountain_passage_2.plot_path_astar(path)
-
-# """Elevation Function 3"""
-# x_range = (-2, 2)
-# y_range = (-2, 2)
-
-# mountain_passage_3 = MountainPassage(elevation_funct=elevation_func_3, traffic_func=traffic_func, num_nodes=num_nodes, num_connections=num_connections, x_range=x_range, y_range=y_range)
+# mountain_passage_5 = MountainPassage(elevation_funct=elevation_func_5, traffic_func=traffic_func, num_nodes=num_nodes, num_connections=num_connections, x_range=x_range, y_range=y_range)
 # print("Elevation Function with Sine and Cosine Interaction:")
-# mountain_passage_3.plot(show_meshgrid=True)
-# mountain_passage_3.plot(show_meshgrid=False)
+# mountain_passage_5.plot(show_plot=True)
+# mountain_passage_5.plot(show_plot=False)
 
-# traffic_df = pd.DataFrame(mountain_passage_3.traffic_weight_matrix)
+# traffic_df = pd.DataFrame(mountain_passage_5.traffic_weight_matrix)
 # print(traffic_df)
 
 # """A* Algorithm"""""
 
-# start, goal = mountain_passage_3.find_furthest_nodes()
+# start, goal = mountain_passage_5.find_furthest_nodes()
 # print("Furthest Nodes: ", start, goal)
-# path = mountain_passage_3.astar(start, goal)
+# path = mountain_passage_5.astar(start, goal)
 # print("Path:", path)
-# mountain_passage_3.plot_astar_optimization(start, goal)
-# mountain_passage_3.plot_path_astar(path)
-
-# """Elevation Function 4"""
-# x_range = (0, np.pi)
-# y_range = (0, np.pi)
-
-# mountain_passage_4 = MountainPassage(elevation_funct=elevation_func_4, traffic_func=traffic_func, num_nodes=num_nodes, num_connections=num_connections, x_range=x_range, y_range=y_range)
-# print("Elevation Function with Sine and Cosine Interaction:")
-# mountain_passage_4.plot(show_meshgrid=True)
-# mountain_passage_4.plot(show_meshgrid=False)
-
-# traffic_df = pd.DataFrame(mountain_passage_4.traffic_weight_matrix)
-# print(traffic_df)
-
-# """A* Algorithm"""""
-
-# start, goal = mountain_passage_4.find_furthest_nodes()
-# print("Furthest Nodes: ", start, goal)
-# path = mountain_passage_4.astar(start, goal)
-# print("Path:", path)
-# mountain_passage_4.plot_astar_optimization(start, goal)
-# mountain_passage_4.plot_path_astar(path)
-
-# """Elevation Function 4"""
-
-num_nodes = 30
-num_connections = 20
-
-x_range = (-np.pi, np.pi)
-y_range = (-np.pi, np.pi)
-
-mountain_passage_5 = MountainPassage(elevation_funct=elevation_func_5, traffic_func=traffic_func, num_nodes=num_nodes, num_connections=num_connections, x_range=x_range, y_range=y_range)
-print("Elevation Function with Sine and Cosine Interaction:")
-mountain_passage_5.plot(show_meshgrid=True)
-mountain_passage_5.plot(show_meshgrid=False)
-
-traffic_df = pd.DataFrame(mountain_passage_5.traffic_weight_matrix)
-print(traffic_df)
-
-"""A* Algorithm"""""
-
-start, goal = mountain_passage_5.find_furthest_nodes()
-print("Furthest Nodes: ", start, goal)
-path = mountain_passage_5.astar(start, goal)
-print("Path:", path)
-# mountain_passage_5.plot_astar_optimization(start, goal)
-mountain_passage_5.plot_path_astar(path)
-df = mountain_passage_5.plot_astar_optimization_new(start, goal, gridsize=100)
-print(df)
+# # mountain_passage_5.plot_astar_optimization(start, goal)
+# mountain_passage_5.plot_path_astar(path)
+# df = mountain_passage_5.plot_astar_optimization_new(start, goal, gridsize=100)
+# print(df)

@@ -257,39 +257,42 @@ def main():
 
     savemycomputer_functon = elevation_functions[:2]
     savemycomputer_domain = domains[:2]
-        # Iterate through each elevation function and domain
+
+    all_results_df = pd.DataFrame(columns=['Convergence Time', 'Raw Cost', 'Total Cost', 'Traffic Cost', 'Path', 'Number of Nodes', 'Number of Connections'])
+
     for function, domain in zip(savemycomputer_functon, savemycomputer_domain):
         for num_nodes in num_nodes_list:
             for num_connections in num_connections_list_1:
-                print(f"Running simulation for {function.__name__} with {num_nodes} nodes and {num_connections} connections")
+                print(f"Running simulation for {function.__name__} with {num_nodes} nodes and {num_connections} connections, SAME THE NUMBER OF CONNECTIONS")
                 mountain_passage = MountainPassage(elevation_funct=function, traffic_func=traffic_func, num_nodes=num_nodes, num_connections=num_connections, x_range=domain[0], y_range=domain[1])
                 start, goal = mountain_passage.find_furthest_nodes()
-                df_records = mountain_passage.main_optimization_method(start, goal, show_plot=show_visualization)
-                df = pd.DataFrame(df_records)
-                print(df)
-            # df.to_csv(f"{function.__name__}_nodes_{num_nodes}.csv", index=False)
+                df_records, _, _ = mountain_passage.astar(start, goal)
+                temp_df = pd.DataFrame(df_records)
+                temp_df['Elevation_Function'] = function.__name__
+                gather_df1 = pd.concat([all_results_df, temp_df], ignore_index=True)
+            
+            for num_connections in num_connections_list_half:
+                print(f"Running simulation for {function.__name__} with {num_nodes} nodes and {num_connections} connections, HALF THE NUMBER OF CONNECTIONS")
+                mountain_passage = MountainPassage(elevation_funct=function, traffic_func=traffic_func, num_nodes=num_nodes, num_connections=num_connections, x_range=domain[0], y_range=domain[1])
+                start, goal = mountain_passage.find_furthest_nodes()
+                df_records, _, _ = mountain_passage.astar(start, goal)
+                temp_df = pd.DataFrame(df_records)
+                temp_df['Elevation_Function'] = function.__name__
+                gather_df2 = pd.concat([all_results_df, temp_df], ignore_index=True)
 
-        # for num_connections in num_connections_list_half:
-        #     constant_num_nodes = num_nodes // 2
-        #     print(f"Running simulation for {function.__name__} with {constant_num_nodes} nodes and {num_connections} connections")
-        #     mountain_passage = MountainPassage(elevation_funct=function, traffic_func=traffic_func, num_nodes=constant_num_nodes, num_connections=num_connections, x_range=domain[0], y_range=domain[1])
-        #     start, goal = mountain_passage.find_furthest_nodes()
-        #     df_records = mountain_passage.main_optimization_method(start, goal, show_plot=show_visualization)
-        #     df = pd.DataFrame(df_records)
-        #     print(df)
-        #     # df.to_csv(f"{function.__name__}_connections_{num_connections}.csv", index=False)
+            for num_connections in num_connections_list_twice:
+                print(f"Running simulation for {function.__name__} with {num_nodes} nodes and {num_connections} connections, TWICE THE NUMBER OF CONNECTIONS")
+                mountain_passage = MountainPassage(elevation_funct=function, traffic_func=traffic_func, num_nodes=num_nodes, num_connections=num_connections, x_range=domain[0], y_range=domain[1])
+                start, goal = mountain_passage.find_furthest_nodes()
+                df_records, _, _ = mountain_passage.astar(start, goal)
+                temp_df = pd.DataFrame(df_records)
+                temp_df['Elevation_Function'] = function.__name__
+                gather_df3 = pd.concat([all_results_df, temp_df], ignore_index=True)
 
-        # for num_connections in num_connections_list_twice:
-        #     constant_num_nodes = num_nodes // 2
-        #     print(f"Running simulation for {function.__name__} with {constant_num_nodes} nodes and {num_connections} connections")
-        #     mountain_passage = MountainPassage(elevation_funct=function, traffic_func=traffic_func, num_nodes=constant_num_nodes, num_connections=num_connections, x_range=domain[0], y_range=domain[1])
-        #     start, goal = mountain_passage.find_furthest_nodes()
-        #     df_records = mountain_passage.main_optimization_method(start, goal, show_plot=show_visualization)
-        #     df = pd.DataFrame(df_records)
-        #     print(df)
-        #     # df.to_csv(f"{function.__name__}_connections_{num_connections}.csv", index=False)
-
-        
+    gather_df1.to_csv('data__same.csv')
+    gather_df2.to_csv('data__half.csv')
+    gather_df3.to_csv('data__twice.csv')
+    
 if __name__ == "__main__":
     main()
 

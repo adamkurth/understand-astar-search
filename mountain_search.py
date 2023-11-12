@@ -16,7 +16,7 @@ class MountainPassage:
         self.y_range = y_range
         self.nodes = self.generate_nodes()
         self.connections = self.generate_connections()
-        self.traffic_weight_matrix = self.traffic_func()
+        self.traffic_weight_matrix = self.traffic_func(self.num_nodes)
     
     def generate_nodes(self): 
         x_nodes = np.random.uniform(self.x_range[0], self.x_range[1], self.num_nodes)
@@ -112,7 +112,7 @@ class MountainPassage:
         return best_paths
 
     def main_optimization_method(self, start, goal, gridsize=100, show_plot=True):
-        df_records, path, visited_nodes = self.astar_algorithm(start, goal)
+        df_records, path, visited_nodes = self.astar(start, goal)
         if show_plot:
             self.plot()
             self.plot_path_astar(path)
@@ -237,18 +237,18 @@ def elevation_func_4(x, y):
 def elevation_func_5(x, y):
     return x**2 -3*x*(y**2)
 
-def traffic_func():
+def traffic_func(num_nodes):
     return np.random.rand(num_nodes, num_nodes) * 10
 
 def main():
-    num_nodes_list = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100]
-    num_connections_list_1 = [10, 20, 30, 40, 50]
-    num_connections_list_half = [x // 2 for x in num_connections_list_1]
-    num_connections_list_twice = [2 * x for x in num_connections_list_1]
-    
-    # want to see visualizations?
+    global show_visualization
     show_visualization_input = input("Do you want to see visualizations? (yes/no): ").strip().lower()
     show_visualization = show_visualization_input == 'yes'
+    
+    num_nodes_list = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100]
+    num_connections_list_1 = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100]
+    num_connections_list_half = [x // 2 for x in num_connections_list_1]
+    num_connections_list_twice = [2 * x for x in num_connections_list_1]
 
     elevation_functions = [elevation_func_1, elevation_func_2, elevation_func_3, elevation_func_4, elevation_func_5]
     domains = [((-np.pi, np.pi), (-np.pi, np.pi)),
@@ -257,23 +257,42 @@ def main():
 
     savemycomputer_functon = elevation_functions[:2]
     savemycomputer_domain = domains[:2]
-    
+        # Iterate through each elevation function and domain
     for function, domain in zip(savemycomputer_functon, savemycomputer_domain):
-        # initializing the mountain passage
-        print(f"Running simulation for {elevation_func_1}.__name__")
-        mountain_passage = MountainPassage(elevation_funct=function, traffic_func=traffic_func, num_nodes=100, num_connections=50, x_range=domain[0], y_range=domain[1])   
-        # start A* algorithm
-        start, goal = mountain_passage.find_furthest_nodes()
-        print("Furthest Nodes: ", start, goal)
-        df_records = mountain_passage.main_optimization_method(start, goal, show_plot=show_visualization)
-        # data collection
-        df = pd.DataFrame(df_records)
-        print(df)
-        # df.to_csv(f"{function.__name__}_data.csv", index=False)
-        # print(f"Data saved to {function.__name__}_data.csv")
-            
+        for num_nodes in num_nodes_list:
+            for num_connections in num_connections_list_1:
+                print(f"Running simulation for {function.__name__} with {num_nodes} nodes and {num_connections} connections")
+                mountain_passage = MountainPassage(elevation_funct=function, traffic_func=traffic_func, num_nodes=num_nodes, num_connections=num_connections, x_range=domain[0], y_range=domain[1])
+                start, goal = mountain_passage.find_furthest_nodes()
+                df_records = mountain_passage.main_optimization_method(start, goal, show_plot=show_visualization)
+                df = pd.DataFrame(df_records)
+                print(df)
+            # df.to_csv(f"{function.__name__}_nodes_{num_nodes}.csv", index=False)
+
+        # for num_connections in num_connections_list_half:
+        #     constant_num_nodes = num_nodes // 2
+        #     print(f"Running simulation for {function.__name__} with {constant_num_nodes} nodes and {num_connections} connections")
+        #     mountain_passage = MountainPassage(elevation_funct=function, traffic_func=traffic_func, num_nodes=constant_num_nodes, num_connections=num_connections, x_range=domain[0], y_range=domain[1])
+        #     start, goal = mountain_passage.find_furthest_nodes()
+        #     df_records = mountain_passage.main_optimization_method(start, goal, show_plot=show_visualization)
+        #     df = pd.DataFrame(df_records)
+        #     print(df)
+        #     # df.to_csv(f"{function.__name__}_connections_{num_connections}.csv", index=False)
+
+        # for num_connections in num_connections_list_twice:
+        #     constant_num_nodes = num_nodes // 2
+        #     print(f"Running simulation for {function.__name__} with {constant_num_nodes} nodes and {num_connections} connections")
+        #     mountain_passage = MountainPassage(elevation_funct=function, traffic_func=traffic_func, num_nodes=constant_num_nodes, num_connections=num_connections, x_range=domain[0], y_range=domain[1])
+        #     start, goal = mountain_passage.find_furthest_nodes()
+        #     df_records = mountain_passage.main_optimization_method(start, goal, show_plot=show_visualization)
+        #     df = pd.DataFrame(df_records)
+        #     print(df)
+        #     # df.to_csv(f"{function.__name__}_connections_{num_connections}.csv", index=False)
+
+        
 if __name__ == "__main__":
     main()
+
 
 # num_nodes = 30
 # num_connections = 20

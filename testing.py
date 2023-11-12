@@ -152,12 +152,15 @@ class MountainPassage:
         plt.show()
     
     
-    def analyze_convergence(self):
+
     
 
 #############################
 ########## Getter methods ##########
+
+
 def elevation_func_1(x, y):
+
     return np.sin(x) * np.cos(y) + 3
 
 def elevation_func_2(x, y):

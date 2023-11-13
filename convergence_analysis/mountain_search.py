@@ -72,6 +72,7 @@ class MountainPassage:
         best_paths = [] # initialize best paths to be empty
         df_records = []
         start_time = time.time()
+        visited_paths = {} # initialize visited paths to be empty
         
         while open_set:
             current_cost, current, path = heapq.heappop(open_set) #pop node with lowest cost
@@ -96,7 +97,8 @@ class MountainPassage:
                     'Number of Nodes': self.num_nodes,
                     'Number of Connections': self.num_connections
                 })
-                return df_records, path, visited_nodes
+                visited_paths[tuple(path)] = visited_nodes.copy()
+                return df_records, path, visited_nodes, visited_paths
             elif current_cost < min_cost:
                 best_paths = [path]
                 min_cost = current_cost
@@ -109,15 +111,22 @@ class MountainPassage:
                     cost = self.line_integral(self.nodes[current], self.nodes[i]) + self.traffic_weight_matrix[current, i]
                     # push new cost, node, and path to priority queue
                     heapq.heappush(open_set, (current_cost + cost, i, path))
+                    visited_paths[tuple(path + [i])] = visited_nodes.copy()
         return best_paths
+    
+    def calculate_density():
+        pass
+    
+    
 
     def main_optimization_method(self, start, goal, gridsize=100, show_plot=True):
-        df_records, path, visited_nodes = self.astar(start, goal)
+        df_records, path, visited_nodes, visited_paths  = self.astar(start, goal)
         if show_plot:
-            self.plot()
-            self.plot_path_astar(path)
+            # self.plot()
+            # self.plot_path_astar(path)
             self.visualize_astar(start, goal, gridsize)
             # self.plot_astar_optimization(path, visited_nodes, gridsize)
+            
         return df_records
 
     def plot_path_astar(self, path):
@@ -180,11 +189,17 @@ class MountainPassage:
         cbar.set_label('Traffic Weight')
         ax.legend()
         plt.show()
-        
-    # visualize search process
+     
     def visualize_astar(self, start, goal, gridsize=100):
+        num_connections = self.num_connections
+        num_nodes = self.num_nodes
+        # Run the A* algorithm
+        df_records, path, visited_nodes, visited_paths = self.astar(start, goal)
+
+        # Set up the 3D plot
         fig = plt.figure()
         ax = fig.add_subplot(111, projection='3d')
+
         # Generate the landscape for the plot
         x = np.linspace(self.x_range[0], self.x_range[1], gridsize)
         y = np.linspace(self.y_range[0], self.y_range[1], gridsize)
@@ -192,31 +207,109 @@ class MountainPassage:
         Z = self.elevation_funct(X, Y)
         ax.plot_surface(X, Y, Z, color='whitesmoke', alpha=0.6)
         
-        # Plot nodes and initial connections
-        ax.scatter(self.nodes[:, 0], self.nodes[:, 1], self.nodes[:, 2], c='blue', marker='o', s=50, label='Towns')
-        for a, b in self.connections:
-            line_x, line_y = np.linspace(self.nodes[a, 0], self.nodes[b, 0], 100), np.linspace(self.nodes[a, 1], self.nodes[b, 1], 100)
+        # Limit the number of nodes for plotting
+        limited_nodes = self.nodes[:num_nodes]
+        ax.scatter(limited_nodes[:, 0], limited_nodes[:, 1], limited_nodes[:, 2], c='blue', marker='o', s=50, label='Towns')
+
+        # Limit the number of connections for plotting
+        for i, (a, b) in enumerate(self.connections):
+            if i >= num_connections:
+                break
+            line_x, line_y = np.linspace(limited_nodes[a, 0], limited_nodes[b, 0], 100), np.linspace(limited_nodes[a, 1], limited_nodes[b, 1], 100)
             line_z = self.elevation_funct(line_x, line_y)
             ax.plot3D(line_x, line_y, line_z, color='gray', linestyle='dotted', label='Connections')
-        
+
+        # Plot visited nodes and paths
+        for visited_path in visited_paths:
+            for i in range(len(visited_path) - 1):
+                a, b = visited_path[i], visited_path[i+1]
+                line_x, line_y = np.linspace(limited_nodes[a, 0], limited_nodes[b, 0], 100), np.linspace(limited_nodes[a, 1], limited_nodes[b, 1], 100)
+                line_z = self.elevation_funct(line_x, line_y)
+                ax.plot3D(line_x, line_y, line_z, color='green', linestyle='dotted', linewidth=2, label='Explored Nodes/Connections')
+                # plt.pause(0.001)
+
+        # Plot the optimized path
+        for i in range(len(path) - 1):
+            a, b = path[i], path[i+1]
+            line_x, line_y = np.linspace(limited_nodes[a, 0], limited_nodes[b, 0], 100), np.linspace(limited_nodes[a, 1], limited_nodes[b, 1], 100)
+            line_z = self.elevation_funct(line_x, line_y)
+            ax.plot3D(line_x, line_y, line_z, color='red', linestyle='solid', linewidth=2, label='Optimized Path')
+            # plt.pause(0.001)
+            traffic_weight = self.line_integral(self.nodes[a], self.nodes[b])
+            mid_point_idx = 50
+            ax.text(line_x[mid_point_idx], line_y[mid_point_idx], line_z[mid_point_idx], f'{traffic_weight:.2f}', color='red')
+
+        # Set axes labels
         ax.set_xlabel('X')
         ax.set_ylabel('Y')
         ax.set_zlabel('Z')
-        # visualize the explored nodes and traffic weights
+
+        # Visualize the explored nodes and traffic weights
         cmap = mcolors.LinearSegmentedColormap.from_list("Traffic", ["green", "yellow", "red"])
         norm = plt.Normalize(vmin=np.min(self.traffic_weight_matrix), vmax=np.max(self.traffic_weight_matrix))
         mappable = plt.cm.ScalarMappable(norm=norm, cmap=cmap)
         mappable.set_array(self.traffic_weight_matrix)
         cbar = plt.colorbar(mappable, ax=ax)
         cbar.set_label('Traffic Weight')
+
+        # Set custom legend
         custom_legend = [
             plt.Line2D([0], [0], marker='o', color='w', label='Towns', markersize=10, linestyle='None'),
-            plt.Line2D([0], [0], color='gray', label='Connections', linestyle='dotted', linewidth=2),
+            plt.Line2D([0], [0], color='red', label='Connections', linewidth=2),
             plt.Line2D([0], [0], color='red', label='Optimized Path', linewidth=2),
             plt.Line2D([0], [0], color='green', label='Explored Nodes/Connections', linestyle='dotted', linewidth=2)
         ]
         ax.legend(handles=custom_legend)
+
         plt.show()
+
+            
+    # # visualize search process
+    # def visualize_astar(self, start, goal, gridsize=100):
+    #     # meshgrid
+    #     fig = plt.figure()
+    #     ax = fig.add_subplot(111, projection='3d')
+    #     # Generate the landscape for the plot
+    #     x = np.linspace(self.x_range[0], self.x_range[1], gridsize)
+    #     y = np.linspace(self.y_range[0], self.y_range[1], gridsize)
+    #     X, Y = np.meshgrid(x, y)
+    #     Z = self.elevation_funct(X, Y)
+    #     ax.plot_surface(X, Y, Z, color='whitesmoke', alpha=0.6)
+        
+    #     # Plot nodes and initial connections
+    #     ax.scatter(self.nodes[:, 0], self.nodes[:, 1], self.nodes[:, 2], c='blue', marker='o', s=50, label='Towns')
+    #     for a, b in self.connections:
+    #         line_x, line_y = np.linspace(self.nodes[a, 0], self.nodes[b, 0], 100), np.linspace(self.nodes[a, 1], self.nodes[b, 1], 100)
+    #         line_z = self.elevation_funct(line_x, line_y)
+    #         ax.plot3D(line_x, line_y, line_z, color='gray', linestyle='dotted', label='Connections')
+        
+    #     # Assuming paths is a list of paths where each path is a list of nodes
+    #     for path in paths:
+    #         for i in range(len(path) - 1):
+                
+    #             a, b = path[i], path[i+1]
+    #             line_x, line_y = np.linspace(self.nodes[a, 0], self.nodes[b, 0], 100), np.linspace(self.nodes[a, 1], self.nodes[b, 1], 100)
+    #             line_z = self.elevation_funct(line_x, line_y)
+    #             ax.plot3D(line_x, line_y, line_z, color='red', linestyle='solid', label='Traversed Path')
+
+    #     ax.set_xlabel('X')
+    #     ax.set_ylabel('Y')
+    #     ax.set_zlabel('Z')
+    #     # visualize the explored nodes and traffic weights
+    #     cmap = mcolors.LinearSegmentedColormap.from_list("Traffic", ["green", "yellow", "red"])
+    #     norm = plt.Normalize(vmin=np.min(self.traffic_weight_matrix), vmax=np.max(self.traffic_weight_matrix))
+    #     mappable = plt.cm.ScalarMappable(norm=norm, cmap=cmap)
+    #     mappable.set_array(self.traffic_weight_matrix)
+    #     cbar = plt.colorbar(mappable, ax=ax)
+    #     cbar.set_label('Traffic Weight')
+    #     custom_legend = [
+    #         plt.Line2D([0], [0], marker='o', color='w', label='Towns', markersize=10, linestyle='None'),
+    #         plt.Line2D([0], [0], color='gray', label='Connections', linestyle='dotted', linewidth=2),
+    #         plt.Line2D([0], [0], color='red', label='Optimized Path', linewidth=2),
+    #         plt.Line2D([0], [0], color='green', label='Explored Nodes/Connections', linestyle='dotted', linewidth=2)
+    #     ]
+    #     ax.legend(handles=custom_legend)
+    #     plt.show()
         
         
 ################################ new (below) #########################################
@@ -240,10 +333,7 @@ def traffic_func(num_nodes):
     return np.random.rand(num_nodes, num_nodes) * 10
 
 def main():
-    global show_visualization
-    show_visualization_input = input("Do you want to see visualizations? (yes/no): ").strip().lower()
-    show_visualization = show_visualization_input == 'yes'
-
+    # lists
     num_nodes_list = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100]
     num_connections_list_1 = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100]
     num_connections_list_half = [x // 2 for x in num_connections_list_1]
@@ -254,11 +344,28 @@ def main():
                ((-2, 2), (-2, 2)),
                ((0, np.pi), (0, np.pi))]
 
-    savemycomputer_functon = elevation_functions[:1]
-    savemycomputer_domain = domains[:1]
+    global show_visualization
+    show_visualization_input = input("Do you want to see visualizations? (yes/no): ").strip().lower()
+    show_visualization = show_visualization_input == 'yes'
 
+    # Prompt user to choose the elevation function
+    while True:
+        try:
+            #choose the corresponding elevation function and domain for the function 
+            function_index = int(input(f"Choose an elevation function (0-{len(elevation_functions)-1}): "))
+            if function_index < 0 or function_index >= len(elevation_functions):
+                raise ValueError
+            break
+        except ValueError:
+            print("Invalid input. Please enter a valid index.")
+
+    # Select the corresponding domain
+    domain = domains[function_index]
+
+    # create dataframe to store results
     all_results_df = pd.DataFrame(columns=['Convergence Time', 'Raw Cost', 'Total Cost', 'Traffic Cost', 'Path', 'Number of Nodes', 'Number of Connections'])
-    run_var = True
+    run_var = True # enable for loop
+    
     # ask for option to run same, half, or double the number of nodes simulation since this is very computationally expensive
     while run_var == True:
         option = input("Enter 'same', 'half', or 'double' to run the corresponding simulation: ").strip().lower()
@@ -275,30 +382,48 @@ def main():
     elif option == 'double': # 'double'
         num_connections_to_use = num_connections_list_twice
 
-    for function, domain in zip(savemycomputer_functon, savemycomputer_domain):
-        for num_nodes in num_nodes_list:
-            for num_connections in num_connections_to_use:
-                print(f"Running simulation for {function.__name__} with {num_nodes} nodes and {num_connections} connections")
-                mountain_passage = MountainPassage(elevation_funct=function, traffic_func=traffic_func, num_nodes=num_nodes, num_connections=num_connections, x_range=domain[0], y_range=domain[1])
-                start, goal = mountain_passage.find_furthest_nodes()
-                df_records, _, _ = mountain_passage.astar(start, goal)
-                temp_df = pd.DataFrame(df_records)
-                temp_df['Elevation_Function'] = function.__name__
-                temp_df['Num_Nodes'] = num_nodes
-                temp_df['Num_Connections'] = num_connections
-                all_results_df = pd.concat([all_results_df, temp_df], ignore_index=True)
-                if num_nodes == num_connections and show_visualization and num_nodes == 4:
-                    mountain_passage.main_optimization_method(start, goal, gridsize=100, show_plot=True)
+
+    function_choice = elevation_functions[function_index]
+    if show_visualization:
+        print(f'Visualizations of {function_choice.__name__}.\n')
+        print(f'For sake of clarity, will plot only 1 demonstration at:\n Number of Nodes {num_nodes_list[3]} \n Number of Connections {num_connections_to_use[3]}\n')
+        mountain_passage = MountainPassage(elevation_funct=function_choice, traffic_func=traffic_func, num_nodes=num_nodes_list[3], num_connections=num_connections_to_use[3], x_range=domain[0], y_range=domain[1])
+        start, goal = mountain_passage.find_furthest_nodes()
+        df_records, _, _, _ = mountain_passage.astar(start, goal)
+        mountain_passage.main_optimization_method(start, goal, gridsize=100, show_plot=True)
+    else:
+        print('No visualizations will be shown.\n')        
+        
+    for num_nodes in num_nodes_list:
+        for num_connections in num_connections_to_use:
+            print(f"Running simulation for {function_choice.__name__} with {num_nodes} nodes and {num_connections} connections")
+            mountain_passage = MountainPassage(elevation_funct=function_choice, traffic_func=traffic_func, num_nodes=num_nodes, num_connections=num_connections, x_range=domain[0], y_range=domain[1])
+            start, goal = mountain_passage.find_furthest_nodes()
+            df_records, _, _, _ = mountain_passage.astar(start, goal)
+            temp_df = pd.DataFrame(df_records)
+            temp_df['Norm'] = np.linalg.norm(np.array(start) - np.array(goal))
+            
+            # The np.linalg.norm function calculates the Euclidean distance between the start and goal nodes in the temp_df DataFrame. 
+            # The units of the distance depend on the units of the x and y coordinates of the nodes. 
+            # The norm is the square root of the sum of the squares of the differences between the corresponding coordinates of the two points.
+            
+            # temp_df['']
+
+            temp_df['Elevation_Function'] = function_choice.__name__
+            all_results_df = pd.concat([all_results_df, temp_df], ignore_index=True)
         
         # mountain_passage.main_optimization_method(start, goal, gridsize=100, show_plot=True)
 
     # Print the DataFrame after all iterations
     print(all_results_df)
-    all_results_df.to_csv(f'all_results_df_{option}.csv', index=False)
+    # all_results_df.to_csv(f'all_results_df_{option}.csv', index=False)
     run_var=False
+
+
 
 if __name__ == "__main__":
     main()
+
  
     
 

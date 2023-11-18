@@ -262,55 +262,6 @@ class MountainPassage:
         ax.legend(handles=custom_legend)
 
         plt.show()
-
-            
-    # # visualize search process
-    # def visualize_astar(self, start, goal, gridsize=100):
-    #     # meshgrid
-    #     fig = plt.figure()
-    #     ax = fig.add_subplot(111, projection='3d')
-    #     # Generate the landscape for the plot
-    #     x = np.linspace(self.x_range[0], self.x_range[1], gridsize)
-    #     y = np.linspace(self.y_range[0], self.y_range[1], gridsize)
-    #     X, Y = np.meshgrid(x, y)
-    #     Z = self.elevation_funct(X, Y)
-    #     ax.plot_surface(X, Y, Z, color='whitesmoke', alpha=0.6)
-        
-    #     # Plot nodes and initial connections
-    #     ax.scatter(self.nodes[:, 0], self.nodes[:, 1], self.nodes[:, 2], c='blue', marker='o', s=50, label='Towns')
-    #     for a, b in self.connections:
-    #         line_x, line_y = np.linspace(self.nodes[a, 0], self.nodes[b, 0], 100), np.linspace(self.nodes[a, 1], self.nodes[b, 1], 100)
-    #         line_z = self.elevation_funct(line_x, line_y)
-    #         ax.plot3D(line_x, line_y, line_z, color='gray', linestyle='dotted', label='Connections')
-        
-    #     # Assuming paths is a list of paths where each path is a list of nodes
-    #     for path in paths:
-    #         for i in range(len(path) - 1):
-                
-    #             a, b = path[i], path[i+1]
-    #             line_x, line_y = np.linspace(self.nodes[a, 0], self.nodes[b, 0], 100), np.linspace(self.nodes[a, 1], self.nodes[b, 1], 100)
-    #             line_z = self.elevation_funct(line_x, line_y)
-    #             ax.plot3D(line_x, line_y, line_z, color='red', linestyle='solid', label='Traversed Path')
-
-    #     ax.set_xlabel('X')
-    #     ax.set_ylabel('Y')
-    #     ax.set_zlabel('Z')
-    #     # visualize the explored nodes and traffic weights
-    #     cmap = mcolors.LinearSegmentedColormap.from_list("Traffic", ["green", "yellow", "red"])
-    #     norm = plt.Normalize(vmin=np.min(self.traffic_weight_matrix), vmax=np.max(self.traffic_weight_matrix))
-    #     mappable = plt.cm.ScalarMappable(norm=norm, cmap=cmap)
-    #     mappable.set_array(self.traffic_weight_matrix)
-    #     cbar = plt.colorbar(mappable, ax=ax)
-    #     cbar.set_label('Traffic Weight')
-    #     custom_legend = [
-    #         plt.Line2D([0], [0], marker='o', color='w', label='Towns', markersize=10, linestyle='None'),
-    #         plt.Line2D([0], [0], color='gray', label='Connections', linestyle='dotted', linewidth=2),
-    #         plt.Line2D([0], [0], color='red', label='Optimized Path', linewidth=2),
-    #         plt.Line2D([0], [0], color='green', label='Explored Nodes/Connections', linestyle='dotted', linewidth=2)
-    #     ]
-    #     ax.legend(handles=custom_legend)
-    #     plt.show()
-        
         
 ################################ new (below) #########################################
 
@@ -340,9 +291,7 @@ def main():
     num_connections_list_twice = [2 * x for x in num_connections_list_1]
 
     elevation_functions = [elevation_func_1, elevation_func_2, elevation_func_3, elevation_func_4, elevation_func_5]
-    domains = [((-np.pi, np.pi), (-np.pi, np.pi)),
-               ((-2, 2), (-2, 2)),
-               ((0, np.pi), (0, np.pi))]
+    domains = [((-np.pi, np.pi), (-np.pi, np.pi)), ((-2, 2), (-2, 2)),((0, np.pi), (0, np.pi)) , ((0, np.pi), (0, np.pi)), ((-np.pi, np.pi), (-np.pi, np.pi))]
 
     global show_visualization
     show_visualization_input = input("Do you want to see visualizations? (yes/no): ").strip().lower()
@@ -351,9 +300,9 @@ def main():
     # Prompt user to choose the elevation function
     while True:
         try:
-            #choose the corresponding elevation function and domain for the function 
-            function_index = int(input(f"Choose an elevation function (0-{len(elevation_functions)-1}): "))
-            if function_index < 0 or function_index >= len(elevation_functions):
+            # choose the corresponding elevation function and domain for the function
+            function_index = int(input(f"Choose an elevation function (0-{len(domains)-1}): "))
+            if function_index < 0 or function_index >= len(domains):
                 raise ValueError
             break
         except ValueError:
@@ -381,7 +330,6 @@ def main():
         num_connections_to_use = num_connections_list_half
     elif option == 'double': # 'double'
         num_connections_to_use = num_connections_list_twice
-
 
     function_choice = elevation_functions[function_index]
     if show_visualization:
@@ -416,7 +364,7 @@ def main():
 
     # Print the DataFrame after all iterations
     print(all_results_df)
-    # all_results_df.to_csv(f'all_results_df_{option}.csv', index=False)
+    all_results_df.to_csv(f'all_results_df_{option}_{function_choice.__name__}.csv', index=False)
     run_var=False
 
 

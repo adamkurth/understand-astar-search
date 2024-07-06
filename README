@@ -1,0 +1,3 @@
+# understand-astar-search
+
+This project is a simple implementation of the A* search algorithm. The basic demo will be a simple 2D/3D grid of points with a start and end point. This is in `field-search`. The more advanced demo will be simulating a "search" over various nodes on a 3D polynomial surface. This is called `mountain-search`. We account for cost in the form of elevation change, sharp curves, and distance between nodes.
